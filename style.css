@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200&display=swap');
+
+.hidden {
+	visibility: hidden;
+}
+
+body {
+	background: white;
+	display: flex;
+	flex-flow: row nowrap;
+	justify-content: stretch;
+	align-content: stretch;
+	align-items: start;
+}
+
+main {
+	flex-grow: 1;
+	font-size: 20px;
+	font-family: serif;
+	
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-items: center;
+	max-width: 800px;
+
+	margin: 0 auto;
+	border-left: 1px solid white;
+	border-right: 1px solid white;
+	padding: 1rem;
+	background: #234;
+	color: white;
+}
+
+h1 {
+	text-align: center;
+	text-decoration: underline;
+	font-size: 30px;
+	font-family: Dosis;
+}
+
+#edit-region {
+	position: relative;
+	border: 1px solid black;
+	box-sizing: border-box;
+	width: 780px;
+	height: 25rem;
+}
+
+#editor {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;	
+	font-size: 20px;
+}
+
+#popup-layer {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;	
+	
+	z-index: 1;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-content: center;
+	align-items: center;
+}
+
+pre {
+	white-space: pre-wrap;
+}
+
+#stderr {
+	border: 1px solid red;
+	padding: 1rem;
+	max-width: 80%;
+	
+	color: red;
+	font-weight: bold;
+	font-size: 16px;
+}
+
+#toolbar {
+	text-align: center;
+	padding: 4px;
+}
+
+#toolbar button, #toolbar select {
+	border: 1px solid white;
+	background: black;
+	color: white;
+	text-align: center;
+	padding: 8px;
+	transition: box-shadow,transform 0.05s ease-in-out;
+}
+
+#toolbar button:hover {
+	box-shadow: 0 0 8px white;
+}
+
+#toolbar button:active {
+	transform: scale(90%);
+}
+
+iframe {
+	box-sizing: border-box;
+	width: 60rem;
+	height: 30rem;
+	background: white;
+	color: black;
+	width: 750px;
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+
+<html>
+	<head>
+        <meta charset="utf-8" />
+		<link rel="stylesheet" href="style.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.13/ace.min.js" integrity="sha512-jB1NOQkR0yLnWmEZQTUW4REqirbskxoYNltZE+8KzXqs9gHG5mrxLR5w3TwUn6AylXkhZZWTPP894xcX/X8Kbg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython.min.js" integrity="sha512-Ku0Q6E6RaZsR8UNZKfm4GcC0ZXrDZyzj00pFmzR6YHoR9u1R4YuaM+Ew6hj50wtOr/lFRjTvQ7ZXJfGzbPAMDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython_stdlib.js" integrity="sha512-kMRN6F4Yq4sNLbPG2lH3EO9n776JHHZub+UWogDxVjh9uTnoVo3wtN/rnQD4C4/AZtqI2zQdvdouGAAxOGwNeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+		<script src="main.py" type="text/python"></script>
+		<script src="pypad.js" defer></script>
+	</head>
+	<body onload="brython()">
+		<main>
+			<h1>Python pad</h1>
+			<form method="get">
+				<label for="project-input">Project:</label>
+				<input id="project-input" name="prj" />
+				<input type="submit" value="Change project" />
+			</form>
+			<div id="toolbar">
+				<select id="file-select">
+					<option value="HTML">HTML</option>
+					<option value="CSS">CSS</option>
+					<option value="Python">Python</option>
+				</select>
+				<button id="html-button">Update HTML and CSS</button>
+				<button id="python-button">Run Python</button>
+			</div>
+			<div id="edit-region">
+				<div id="popup-layer" class="hidden">
+					<pre id="stderr"></pre>
+				</div>
+				<div id="editor"></div>
+			</div>
+			<iframe id="user-page">
+			</iframe>
+		</main>
+	</body>
+</html>
