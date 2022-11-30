@@ -13,19 +13,19 @@
 	<body onload="brython()">
 		<main>
 			<h1>Python pad</h1>
-			<form method="get">
-				<label for="project-input">Project:</label>
-				<input id="project-input" name="prj" />
-				<input type="submit" value="Change project" />
-			</form>
+            <div class="hidden">
+                <a id="save-link">Save link</a>
+                <input id="load-file" type="file" accept=".pypad" />
+            </div>
 			<div id="toolbar">
 				<select id="file-select">
 					<option value="HTML">HTML</option>
 					<option value="CSS">CSS</option>
 					<option value="Python">Python</option>
 				</select>
-				<button id="html-button">Update HTML and CSS</button>
-				<button id="python-button">Run Python</button>
+				<button id="run-button">Run</button>
+				<button id="load-button">Load</button>
+				<button id="save-button">Save</button>
 			</div>
 			<div id="edit-region">
 				<div id="popup-layer" class="hidden">
