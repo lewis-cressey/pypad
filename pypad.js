@@ -46,8 +46,6 @@ function saveSessions() {
     return sessions
 }
 
-editor.setSession(SESSIONS.HTML)
-
 document.querySelector("#file-select").addEventListener("change", event => {
     const sessions = saveSessions()
 	const session = sessions[event.target.value]
@@ -88,7 +86,8 @@ document.querySelector("#save-button").addEventListener("click", event => {
     const blob = new Blob([ json ], { type: "text/json" })
     link.href = window.URL.createObjectURL(blob)
     const today = new Date()
-    const filename = `${today.getDate()}-${today.getMonth() + 1}`
+    let filename = document.getElementById("project-name").value.toString().trim()
+	if (filename.length == 0) filename = "program"
     link.download = `${filename}.pypad`
     link.click()
 })
@@ -112,3 +111,14 @@ document.querySelector("#load-file").addEventListener("click", event => {
 document.querySelector("#load-button").addEventListener("click", event => {
     document.querySelector("#load-file").click()
 })
+
+function main() {
+	const projectName = document.getElementById("project-name")
+	projectName.value = localStorage.getItem("pypad.project-name") || "unnamed-project"
+	projectName.addEventListener("change", event => {
+		localStorage.setItem("pypad.project-name", projectName.value)
+	})
+	editor.setSession(SESSIONS.HTML)
+}
+
+main()

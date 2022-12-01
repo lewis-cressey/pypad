@@ -86,8 +86,13 @@ pre {
 }
 
 #toolbar {
-	text-align: center;
-	padding: 4px;
+	box-sizing: border-box;
+	width: 100%;
+	display: flex;
+	flex-flow: row nowrap;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px;
 }
 
 #toolbar button, #toolbar select {

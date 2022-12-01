@@ -18,14 +18,20 @@
                 <input id="load-file" type="file" accept=".pypad" />
             </div>
 			<div id="toolbar">
-				<select id="file-select">
-					<option value="HTML">HTML</option>
-					<option value="CSS">CSS</option>
-					<option value="Python">Python</option>
-				</select>
-				<button id="run-button">Run</button>
-				<button id="load-button">Load</button>
-				<button id="save-button">Save</button>
+				<div class="left">
+					<label for="save-filename">Filename:</label>
+					<input id="project-name" placeholder="Enter project name">
+					<select id="file-select">
+						<option value="HTML">HTML</option>
+						<option value="CSS">CSS</option>
+						<option value="Python">Python</option>
+					</select>
+				</div>
+				<div class="right">
+					<button id="run-button">Run</button>
+					<button id="load-button">Load</button>
+					<button id="save-button">Save</button>
+				</div>
 			</div>
 			<div id="edit-region">
 				<div id="popup-layer" class="hidden">
