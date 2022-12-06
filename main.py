@@ -3,6 +3,13 @@ import traceback
 import io
 from types import SimpleNamespace
 
+EVENTS = (
+    ("button", "click"),
+    ("input[type=button]", "click"),
+    ("input", "change"),
+    ("select", "change"),
+)
+
 page = SimpleNamespace()
 
 def show_popup(text):
@@ -50,14 +57,23 @@ def client_print(*args, **kwargs):
     if hasattr(element, "value"): element.value = output.getvalue()
     else: element.innerHTML += output.getvalue()
 
-def client_button_click(event, global_vars):
+def client_event_handler(event, global_vars):
     button_id = event.target.id
-    method_name = f"click_{button_id}"
+    method_name = f"{event.type}_{button_id}"
+    print(f"Call {method_name}")
     callback = global_vars.get(method_name)
     if callback is not None:
         try: callback()
         except Exception as e: show_traceback()
 
+def add_listeners(element, global_vars):
+    def callback(event):
+        return client_event_handler(event, global_vars)
+
+    for selector, event_name in EVENTS:
+        if element.matches(selector):
+            element.bind(event_name, callback)
+        
 def run_script(text):
     global_vars = globals().copy()    
     global_vars["select"] = client_select
@@ -70,10 +86,8 @@ def run_script(text):
     ids.body = page.root_element.querySelector("body")
     for element in page.root_element.querySelectorAll("[id]"):
         setattr(ids, element.id, element)
-        if element.tagName == "BUTTON":
-            def callback(event): return client_button_click(event, global_vars)
-            element.bind("click", callback)
-    
+        add_listeners(element, global_vars)
+   
     try:
         exec(text, global_vars)
     except Exception as e:
