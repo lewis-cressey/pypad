@@ -10,96 +10,107 @@ EVENTS = (
     ("select", "change"),
 )
 
-page = SimpleNamespace()
+real_print = print
 
-def show_popup(text):
-    page.stderr.textContent = text
-    page.popup_layer.setAttribute("class", "")
-
-def show_traceback():
-    show_popup(traceback.format_exc())
+class Popup:
+    @classmethod
+    def traceback(self):
+        return Popup(traceback.format_exc())
     
-def hide_popup(*args):
-    page.popup_layer.setAttribute("class", "hidden")
+    def __init__(self, text):
+        self.layer = window.document["popup-layer"]
+        self.text = text
+        
+    def show(self):
+        self.layer.innerHTML = "<pre></pre>"
+        content = self.layer.querySelector("pre")
+        content.textContent = self.text
+        content.bind("click", self.hide)
+        self.layer.setAttribute("class", "")
 
-def get_stdout():
-    element = page.inner_document.getElementById("stdout")
+    def hide(self, *event):
+        self.layer.innerHTML = ""
+        self.layer.setAttribute("class", "hidden")
+
+def stdout():
+    element = page.document.getElementById("stdout")
     if element is None:
-        element = page.inner_document.createElement("div")
+        element = page.document.createElement("div")
         element.id = "stdout"
         page.root_element.querySelector("body").append(element)
     return element
 
-def client_select(selector, raise_on_fail = True):
+def select(selector, raise_on_fail = True):
     if not isinstance(selector, str): return selector
-    element = page.inner_document.getElementById(selector)
+    element = page.document.getElementById(selector)
     if element is not None: return element
     element = page.root_element.querySelector(selector)      
     if element is not None: return element
     if raise_on_fail: raise RuntimeError(f"No such element as {selector}")
     return None
 
-def client_clear(selector = None):
-    element = client_select(selector or get_stdout())
+def clear(selector = None):
+    element = select(selector or stdout())
     element.innerHTML = ""
 
-def client_input(selector):
+def input(selector):
     control = client_select(selector)
     if hasattr(control, "value"): return control.value
     return control.textContent
 
-def client_print(*args, **kwargs):
+def print(*args, **kwargs):
     output = io.StringIO()
-    print(*args, file=output, **kwargs)
-    
+    real_print(*args, file=output, **kwargs)
     element_id = kwargs.get("to")
-    element = client_select(element_id or get_stdout())
+    element = select(element_id or stdout())
     if hasattr(element, "value"): element.value = output.getvalue()
     else: element.innerHTML += output.getvalue()
 
-def client_event_handler(event, global_vars):
-    button_id = event.target.id
-    method_name = f"{event.type}_{button_id}"
-    print(f"Call {method_name}")
-    callback = global_vars.get(method_name)
+def client_event_handler(event):
+    target_id = event.target.id
+    method_name = f"{event.type}_{target_id}"
+    callback = globals().get(method_name)
     if callback is not None:
         try: callback()
         except Exception as e: show_traceback()
 
-def add_listeners(element, global_vars):
+def add_listeners(element):
     def callback(event):
-        return client_event_handler(event, global_vars)
+        return client_event_handler(event)
 
     for selector, event_name in EVENTS:
         if element.matches(selector):
             element.bind(event_name, callback)
-        
-def run_script(text):
-    global_vars = globals().copy()    
-    global_vars["select"] = client_select
-    global_vars["clear"] = client_clear
-    global_vars["input"] = client_input
-    global_vars["print"] = client_print
-    ids = SimpleNamespace()
-    global_vars["page"] = ids
+     
+def scan_page():
+    page = SimpleNamespace()
+    iframe = window.document.getElementById("user-page")
 
-    ids.body = page.root_element.querySelector("body")
+    if iframe:
+        page.document = iframe.contentWindow.document
+        page.popup_layer = document["popup-layer"]
+    else:
+        page.document = window.document
+
+    page.root_element = page.document.documentElement
     for element in page.root_element.querySelectorAll("[id]"):
-        setattr(ids, element.id, element)
-        add_listeners(element, global_vars)
-   
+        setattr(page, element.id, element)
+        add_listeners(element)
+        
+    return page
+
+page = scan_page()
+def run_script(text):
+    global page
+    page = scan_page()
+    
     try:
-        exec(text, global_vars)
+        exec(text)
     except Exception as e:
-        show_traceback()
+        popup = Popup.traceback()
+        popup.show()
     
 def main():
-    page.inner_document = document["user-page"].contentWindow.document
-    page.root_element = page.inner_document.documentElement
-    page.stderr = document["stderr"]
-    page.popup_layer = document["popup-layer"]
-    
-    page.popup_layer.addEventListener("click", hide_popup)
     window.run_script = run_script
-
+    
 main()

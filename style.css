@@ -63,7 +63,7 @@ h1 {
 	left: 0;
 	right: 0;	
 	
-	z-index: 1;
+	z-index: 100;
 	display: flex;
 	flex-flow: column nowrap;
 	justify-content: center;
@@ -72,6 +72,11 @@ h1 {
 }
 
 pre {
+	box-sizing: border-box;
+	background: white;
+	border: 2px solid red;
+	color: red;
+	padding: 1em;
 	white-space: pre-wrap;
 }
 

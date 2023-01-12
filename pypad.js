@@ -46,6 +46,17 @@ function saveSessions() {
     return sessions
 }
 
+function downloadBlob(extension, blob) {
+    let filename = document.getElementById("project-name").value.toString().trim()
+	if (filename.length == 0) filename = "program"
+	filename += extension
+	
+	const link = document.getElementById("save-link")
+    link.href = window.URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+}
+
 document.querySelector("#file-select").addEventListener("change", event => {
     const sessions = saveSessions()
 	const session = sessions[event.target.value]
@@ -82,14 +93,8 @@ document.querySelector("#save-button").addEventListener("click", event => {
     }
 
     const json = JSON.stringify(jobj)
-    const link = document.getElementById("save-link")
     const blob = new Blob([ json ], { type: "text/json" })
-    link.href = window.URL.createObjectURL(blob)
-    const today = new Date()
-    let filename = document.getElementById("project-name").value.toString().trim()
-	if (filename.length == 0) filename = "program"
-    link.download = `${filename}.pypad`
-    link.click()
+	downloadBlob(".pypad", blob)
 })
 
 document.querySelector("#load-file").addEventListener("click", event => {
@@ -110,6 +115,39 @@ document.querySelector("#load-file").addEventListener("click", event => {
 
 document.querySelector("#load-button").addEventListener("click", event => {
     document.querySelector("#load-file").click()
+})
+
+document.querySelector("#export-button").addEventListener("click", async event => {
+    const sessions = saveSessions()
+	const css = sessions.CSS.getValue()
+	const html = sessions.HTML.getValue()
+	const response = await window.fetch("main.py")
+	const pypadCode = await response.text()
+	console.log(pypadCode)
+	const python = sessions.Python.getValue()
+	
+	let code = `
+        <html>
+            <head>
+				<meta charset="utf-8" />
+                <style>
+${css}
+				</style>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython.min.js" integrity="sha512-Ku0Q6E6RaZsR8UNZKfm4GcC0ZXrDZyzj00pFmzR6YHoR9u1R4YuaM+Ew6hj50wtOr/lFRjTvQ7ZXJfGzbPAMDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython_stdlib.js" integrity="sha512-kMRN6F4Yq4sNLbPG2lH3EO9n776JHHZub+UWogDxVjh9uTnoVo3wtN/rnQD4C4/AZtqI2zQdvdouGAAxOGwNeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+				<script type="text/python">
+${pypadCode}
+${python}
+				</script>
+            </head>
+            <body onload="brython()">
+${html}
+			</body>
+        </html>
+    `
+	
+	const blob = new Blob([ code ], { type: "text/html" })
+	downloadBlob(".html", blob)
 })
 
 function main() {
