@@ -12,19 +12,20 @@
 	</head>
 	<body onload="brython()">
 		<main>
-			<h1>PyPad 1.2</h1>
+			<h1>PyPad 1.3</h1>
             <div class="hidden">
                 <a id="save-link">Save link</a>
                 <input id="load-file" type="file" accept=".pypad" />
             </div>
 			<div id="toolbar">
 				<div class="left">
-					<label for="save-filename">Filename:</label>
-					<input id="project-name" placeholder="Enter project name">
+					<label for="filename">Filename:</label>
+					<input id="filename" type="text">
 					<select id="file-select">
-						<option value="HTML">HTML</option>
-						<option value="CSS">CSS</option>
-						<option value="Python">Python</option>
+						<option value="html">HTML</option>
+						<option value="css">CSS</option>
+						<option value="javascript">Javascript</option>
+						<option value="python">Python</option>
 					</select>
 				</div>
 				<div class="right">

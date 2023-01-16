@@ -1,112 +1,184 @@
+/****************************************************************************
+ ** Text templates.                                                        **
+ ****************************************************************************/
+
+const TEMPLATES = {
+	application: `
+        <html>
+            <head>
+				<meta charset="utf-8" />
+                <style>
+					#css#
+				</style>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython.min.js" integrity="sha512-Ku0Q6E6RaZsR8UNZKfm4GcC0ZXrDZyzj00pFmzR6YHoR9u1R4YuaM+Ew6hj50wtOr/lFRjTvQ7ZXJfGzbPAMDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython_stdlib.js" integrity="sha512-kMRN6F4Yq4sNLbPG2lH3EO9n776JHHZub+UWogDxVjh9uTnoVo3wtN/rnQD4C4/AZtqI2zQdvdouGAAxOGwNeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+				<script type="text/python">
+					#code#
+				</script>
+            </head>
+            <body onload="brython()">
+				#html#
+			</div>
+			</body>
+        </html>
+	`,
+	iframe: `
+        <html>
+            <head>
+                <style>
+					#css#
+				</style>
+            </head>
+            <body>
+				#html#
+			</body>
+        </html>
+    `
+}
+
+/****************************************************************************
+ ** Global constants.                                                      **
+ ****************************************************************************/
+
 const EditSession = require("ace/edit_session").EditSession;
 ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.13/")
 const editor = ace.edit("editor");
+const filenameInput = document.getElementById("filename")
+const iframeElement = document.querySelector("iframe")
 
-function getParameter(name, fallback) {
-    let result = null
-    const fields = location.search.substr(1).split("&")
-    for (let field of fields) {
-		const lhsRhs = field.split("=");
-		if (lhsRhs.length === 2 && lhsRhs[0] === name) {
-			return decodeURIComponent(lhsRhs[1]);
-		} else if (lhsRhs.length === 1 && lhsRhs[0] === name) {
-			return true
-		}
-    }
-    return fallback;
-}
+/****************************************************************************
+ ** Utility functions.                                                     **
+ ****************************************************************************/
 
-function createSessions(sessionTitles) {
-	const sessions = {}
-
-	for (let sessionTitle of Object.keys(sessionTitles)) {
-		const session = new EditSession("")
-		const lang = sessionTitles[sessionTitle]
-		session.setMode(`ace/mode/${lang}`)
-		session.setValue(localStorage.getItem(`pypad.${sessionTitle}`) || "")
-		sessions[sessionTitle] = session
+function getFilename(extension = "") {
+	let filename = filenameInput.value.trim()
+	if (filename == "") {
+		filename = localStorage.getItem("pypad.filename") || "unnamed"
+		filenameInput.value = filename
 	}
-
-	return sessions
+	if (!filename.endsWith(extension)) filename += extension
+	return filename
 }
 
-const SESSIONS = createSessions({
-	"HTML" : "html",
-	"CSS" : "css",
-	"Python" : "python",	
-})
-
-function saveSessions() {
-    const sessions = SESSIONS
-	for (let sessionTitle of Object.keys(sessions)) {
-		const session = sessions[sessionTitle]
-		const text = session.getValue()
-		localStorage.setItem(`pypad.${sessionTitle}`, text)
+function renderTemplate(template, substitutions) {
+	let index0 = 0
+	let result = []
+	while (true) {
+		const index1 = template.indexOf("#", index0)
+		if (index1 < 0) break
+		const index2 = template.indexOf("#", index1 + 1)
+		if (index2 < 0) break
+		const tag = template.substring(index1 + 1, index2)
+		result.push(template.substring(index0, index1))
+		result.push(substitutions[tag])
+		index0 = index2 + 1
 	}
-    return sessions
+	result.push(template.substring(index0))
+	return result.join("")
 }
 
-function downloadBlob(extension, blob) {
-    let filename = document.getElementById("project-name").value.toString().trim()
-	if (filename.length == 0) filename = "program"
-	filename += extension
-	
+function download(filename, text, mimetype = "text/plain") {
+	const blob = new Blob([ text ], { type: mimetype })
 	const link = document.getElementById("save-link")
     link.href = window.URL.createObjectURL(blob)
     link.download = filename
     link.click()
 }
 
+/****************************************************************************
+ ** Creating edit sessions for supported languages.                        **
+ ****************************************************************************/
+
+class Project {
+	constructor() {
+		this.sessionNames = [ "html", "css", "python", "javascript" ]
+		this.sessions = {}
+		
+		for (let sessionName of this.sessionNames) {
+			const session = new EditSession("")
+			session.setMode(`ace/mode/${sessionName}`)
+			session.setValue(localStorage.getItem(`pypad.${sessionName}`) || "")
+			this.sessions[sessionName] = session
+		}
+	}
+
+	getSession(sessionName) {
+		return this.sessions[sessionName]
+	}
+
+	getText(sessionName) {
+		return this.getSession(sessionName).getValue() || ""
+	}
+
+	toJson() {
+		let jobj = {}
+		for (let sessionName of this.sessionNames) {
+			jobj[sessionName] = this.getText(sessionName)
+		}
+		return JSON.stringify(jobj)
+	}
+
+	fromJson(json) {
+		let jobj = {}
+		
+		try {
+			jobj = JSON.parse(json)
+		} catch {}
+		
+		for (let sessionName of this.sessionNames) {
+			this.sessions[sessionName].setValue(jobj[sessionName] || "")
+		}
+	}
+
+	save() {
+		localStorage.setItem("pypad.code", this.toJson())
+	}
+
+	load() {
+		this.fromJson(localStorage.getItem("pypad.code") || "")
+	}
+}
+
+const PROJECT = new Project()
+
+/****************************************************************************
+ ** User interface.                                                        **
+ ****************************************************************************/
+
 document.querySelector("#file-select").addEventListener("change", event => {
-    const sessions = saveSessions()
-	const session = sessions[event.target.value]
+    PROJECT.save()
+	const session = PROJECT.getSession(event.target.value)
 	editor.setSession(session)
 })
 
 document.querySelector("#run-button").addEventListener("click", event => {
-	const sessions = saveSessions()
-	const iframeElement = document.querySelector("iframe")
+	PROJECT.save()
 	const doc = iframeElement.contentWindow.document
-	const css = sessions.CSS.getValue()
-	const html = sessions.HTML.getValue()
-	const python = sessions.Python.getValue()
+	doc.documentElement.innerHTML = renderTemplate(TEMPLATES.iframe, {
+		css: PROJECT.getText("css"),
+		html: PROJECT.getText("html"),
+	})
+	
+	for (let element of doc.querySelectorAll("a, form")) {
+		element.setAttribute("target", "_blank")
+	}
 
-	doc.documentElement.innerHTML = `
-        <html>
-            <head>
-                <style>${css}</style>
-            </head>
-            <body>${html}</body>
-        </html>
-    `
-
-	window.run_script(python)
+	window.run_script(PROJECT.getText("python"))
 })
 
 document.querySelector("#save-button").addEventListener("click", event => {
-    const sessions = saveSessions()
-
-    const jobj = {
-        css: sessions.CSS.getValue(),
-        html: sessions.HTML.getValue(),
-        python: sessions.Python.getValue(),
-    }
-
-    const json = JSON.stringify(jobj)
-    const blob = new Blob([ json ], { type: "text/json" })
-	downloadBlob(".pypad", blob)
+    PROJECT.save()
+	const filename = getFilename(".pypad")
+	download(filename, PROJECT.toJson(), "application/json")
 })
 
-document.querySelector("#load-file").addEventListener("click", event => {
-    const sessions = SESSIONS
+document.querySelector("#load-file").addEventListener("change", event => {
     const reader = new FileReader()
 
     reader.onload = function() {
-        const jobj = JSON.parse(reader.result)
-        sessions.CSS.setValue(jobj.css)
-        sessions.HTML.setValue(jobj.html)
-        sessions.Python.setValue(jobj.python)
-        saveSessions()
+        PROJECT.fromJson(reader.result)
+		PROJECT.save()
+		
     }
 
     const files = event.target.files
@@ -118,45 +190,24 @@ document.querySelector("#load-button").addEventListener("click", event => {
 })
 
 document.querySelector("#export-button").addEventListener("click", async event => {
-    const sessions = saveSessions()
-	const css = sessions.CSS.getValue()
-	const html = sessions.HTML.getValue()
+    PROJECT.save()
+	const filename = getFilename(".html")
 	const response = await window.fetch("main.py")
 	const pypadCode = await response.text()
-	console.log(pypadCode)
-	const python = sessions.Python.getValue()
+
+	let standalone = renderTemplate(TEMPLATES.application, {
+		html: PROJECT.getText("html"),
+		css: PROJECT.getText("css"),
+		code: pypadCode + PROJECT.getText("python"),
+	})
 	
-	let code = `
-        <html>
-            <head>
-				<meta charset="utf-8" />
-                <style>
-${css}
-				</style>
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython.min.js" integrity="sha512-Ku0Q6E6RaZsR8UNZKfm4GcC0ZXrDZyzj00pFmzR6YHoR9u1R4YuaM+Ew6hj50wtOr/lFRjTvQ7ZXJfGzbPAMDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython_stdlib.js" integrity="sha512-kMRN6F4Yq4sNLbPG2lH3EO9n776JHHZub+UWogDxVjh9uTnoVo3wtN/rnQD4C4/AZtqI2zQdvdouGAAxOGwNeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-				<script type="text/python">
-${pypadCode}
-${python}
-				</script>
-            </head>
-            <body onload="brython()">
-${html}
-			</body>
-        </html>
-    `
-	
-	const blob = new Blob([ code ], { type: "text/html" })
-	downloadBlob(".html", blob)
+	download(filename, standalone, "text/html")
 })
 
 function main() {
-	const projectName = document.getElementById("project-name")
-	projectName.value = localStorage.getItem("pypad.project-name") || "unnamed-project"
-	projectName.addEventListener("change", event => {
-		localStorage.setItem("pypad.project-name", projectName.value)
-	})
-	editor.setSession(SESSIONS.HTML)
+	getFilename()
+	PROJECT.load()
+	editor.setSession(PROJECT.getSession("html"))
 }
 
 main()

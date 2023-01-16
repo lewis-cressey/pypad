@@ -99,7 +99,6 @@ def scan_page():
         
     return page
 
-page = scan_page()
 def run_script(text):
     global page
     page = scan_page()
@@ -111,6 +110,8 @@ def run_script(text):
         popup.show()
     
 def main():
+    global page
+    page = scan_page()
     window.run_script = run_script
     
 main()
