@@ -13,13 +13,16 @@ const TEMPLATES = {
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython.min.js" integrity="sha512-Ku0Q6E6RaZsR8UNZKfm4GcC0ZXrDZyzj00pFmzR6YHoR9u1R4YuaM+Ew6hj50wtOr/lFRjTvQ7ZXJfGzbPAMDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.4/brython_stdlib.js" integrity="sha512-kMRN6F4Yq4sNLbPG2lH3EO9n776JHHZub+UWogDxVjh9uTnoVo3wtN/rnQD4C4/AZtqI2zQdvdouGAAxOGwNeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 				<script type="text/python">
-					#code#
+					#pyCode#
 				</script>
             </head>
             <body onload="brython()">
 				#html#
 			</div>
 			</body>
+			<script>
+				#jsCode#
+			</script>
         </html>
 	`,
 	iframe: `
@@ -32,6 +35,12 @@ const TEMPLATES = {
             <body>
 				#html#
 			</body>
+			<script>
+				window.onload = function() {
+					console.log("RUNNING...")
+				}
+				#jsCode#
+			</script>
         </html>
     `
 }
@@ -83,6 +92,45 @@ function download(filename, text, mimetype = "text/plain") {
     link.href = window.URL.createObjectURL(blob)
     link.download = filename
     link.click()
+}
+
+function showPopup(text) {
+	const layer = document.querySelector("#popup-layer")
+    layer.innerHTML = "<pre></pre>"
+    content = self.layer.querySelector("pre")
+    content.textContent = text
+    content.addEventListener("click", function() {
+        layer.innerHTML = ""
+        layer.setAttribute("class", "hidden")
+	})
+    layer.setAttribute("class", "")
+}
+
+function runUserJs(code) {
+	try {
+		const f = new Function(`(function usercode() {\n"use strict;"\n${code}\n}).call()\n`)
+		f()
+		return null
+	} catch (err) {
+		const lines = err.stack.split("\n")
+		let line = lines[1]
+		let lineNumber = 0
+		const functionName = "<anonymous>"
+		
+		for (;;) {
+			const index = line.indexOf(functionName)
+			if (index < 0) break
+			line = line.substring(index + functionName.length)
+		}
+		
+		for (;;) {
+			lineNumber = parseInt(line)
+			if (lineNumber > 0) break
+			line = line.substring(1)
+		}
+		
+		showPopup(`Line ${lineNumber}: ${err}`)
+	}
 }
 
 /****************************************************************************
@@ -157,6 +205,7 @@ document.querySelector("#run-button").addEventListener("click", event => {
 	doc.documentElement.innerHTML = renderTemplate(TEMPLATES.iframe, {
 		css: PROJECT.getText("css"),
 		html: PROJECT.getText("html"),
+		jsCode: PROJECT.getText("javascript"),
 	})
 	
 	for (let element of doc.querySelectorAll("a, form")) {
@@ -198,9 +247,10 @@ document.querySelector("#export-button").addEventListener("click", async event =
 	let standalone = renderTemplate(TEMPLATES.application, {
 		html: PROJECT.getText("html"),
 		css: PROJECT.getText("css"),
-		code: pypadCode + PROJECT.getText("python"),
+		jsCode: PROJECT.getText("javascript"),
+		pyCode: pypadCode + PROJECT.getText("python"),
 	})
-	
+		
 	download(filename, standalone, "text/html")
 })
 
