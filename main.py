@@ -20,10 +20,23 @@ class ElementWrapper:
         ("select", "change"),
     )
 
+    instances = {}
+    
+    @classmethod
+    def of(self, element):
+        instance = self.instances.get(element.id)
+        if instance is None:
+            instance = ElementWrapper(element)
+            self.instances[element.id] = instance
+        return instance
+
     def __init__(self, element):
         self.element = element
         self.content_attribute = None
+        self.typename = None
+        
         if hasattr(element, "value"): self.content_attribute = "value"
+        if hasattr(element, "type"): self.typename = element.type.lower()
         
         for selector, event_name in self.events:
             if element.matches(selector):
@@ -31,25 +44,39 @@ class ElementWrapper:
     
     def select(self, selector):
         child = self.element.querySelector(selector)
-        if child: return ElementWrapper(child)
+        if child: return ElementWrapper.of(child)
         else: return None
     
     def select_all(self, selector):
         children = self.element.querySelectorAll(selector)
-        return [ ElementWrapper(child) for child in children ]
+        return [ ElementWrapper.of(child) for child in children ]
     
     def clear(self):
         self.innerHTML = ""
     
     @property
     def value(self):
-        if self.content_attribute: return getattr(self.element, self.content_attribute)
-        return self.element.textContent
+        if self.content_attribute: value = getattr(self.element, self.content_attribute)
+        else: value = self.element.textContent
+        if self.typename == "number":
+            try: value = int(value)
+            except: value = float(value)
+        return value
         
     @value.setter
     def value(self, value):
+        value = str(value)
         if self.content_attribute: setattr(self.element, self.content_attribute, value)
         self.element.textContent = value
+    
+    @property
+    def number(self):
+        try: return int(self.value)
+        except: return float(self.value)
+        
+    @number.setter
+    def number(self, value):
+        self.value = str(value)
     
     def print(self, *args, **kwargs):
         output = io.StringIO()
@@ -77,14 +104,14 @@ def client_input(element_id = None):
 
 def client_print(*args, **kwargs):
     stdout = Config.document_element.querySelector("#stdout")
-    ElementWrapper(stdout).print(*args, **kwargs)
+    ElementWrapper.of(stdout).print(*args, **kwargs)
 
 def run_script(text):
     Config.user_namespace["input"] = client_input
     Config.user_namespace["print"] = client_print
 
     for element in Config.document_element.querySelectorAll("[id]"):
-        element_wrapper = ElementWrapper(element)
+        element_wrapper = ElementWrapper.of(element)
         Config.user_namespace[element.id] = element_wrapper
        
     try:
