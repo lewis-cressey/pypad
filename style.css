@@ -34,7 +34,7 @@ main {
 
 h1 {
 	text-align: center;
-	text-decoration: underline;
+	text-decoration: none;
 	font-size: 30px;
 	font-family: Dosis;
 }
