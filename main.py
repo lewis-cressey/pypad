@@ -7,7 +7,6 @@ class Config:
     document = None
     document_element = None
     user_namespace = None
-    user_document = None
 
 def show_stacktrace(message = ""):
     trace = traceback.format_exc()
@@ -67,7 +66,8 @@ class ElementWrapper:
 
 def client_input(element_id = None):
     if element_id is None: element = None
-    else: element = Config.user_document.root.select("#" + element_id)
+    elif isinstance(element_id, ElementWrapper): element = element_id
+    else: element = Config.document.getElementById(str(element_id))
 
     if element is None:
         show_stacktrace("Incorrect HTML id given to input.")
@@ -76,26 +76,18 @@ def client_input(element_id = None):
         return element.value
 
 def client_print(*args, **kwargs):
-    stdout = Config.user_document.root.select("#stdout")
-    stdout.print(*args, **kwargs)
-
-def scan_document():
-    document = SimpleNamespace()
-    document.root = ElementWrapper(Config.document_element)
-    
-    for element in Config.document_element.querySelectorAll("[id]"):
-        element_wrapper = ElementWrapper(element)
-        setattr(document, element.id, element_wrapper)
-        
-    return document
+    stdout = Config.document_element.querySelector("#stdout")
+    ElementWrapper(stdout).print(*args, **kwargs)
 
 def run_script(text):
     Config.user_namespace["input"] = client_input
     Config.user_namespace["print"] = client_print
-        
+
+    for element in Config.document_element.querySelectorAll("[id]"):
+        element_wrapper = ElementWrapper(element)
+        Config.user_namespace[element.id] = element_wrapper
+       
     try:
-        Config.user_document = scan_document()
-        Config.user_namespace["document"] = Config.user_document
         exec(text, Config.user_namespace)
     except Exception as e:
         show_stacktrace()
