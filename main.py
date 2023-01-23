@@ -12,6 +12,18 @@ def show_stacktrace(message = ""):
     trace = traceback.format_exc()
     window.parent.postMessage(f"Python error: {message}\n{trace}")
 
+def string_to_boolean(value):
+    value = str(value).lower()
+    if value == "false" or value == "": return False
+    return True
+
+def string_to_number(value):
+    try: value = int(value)
+    except: pass
+    try: value = float(value)
+    except: pass
+    return value
+
 class ElementWrapper:
     events = (
         ("button", "click"),
@@ -32,12 +44,7 @@ class ElementWrapper:
 
     def __init__(self, element):
         self.element = element
-        self.content_attribute = None
-        self.typename = None
-        
-        if hasattr(element, "value"): self.content_attribute = "value"
-        if hasattr(element, "type"): self.typename = element.type.lower()
-        
+
         for selector, event_name in self.events:
             if element.matches(selector):
                 element.bind(event_name, self.client_event_handler)
@@ -56,18 +63,26 @@ class ElementWrapper:
     
     @property
     def value(self):
-        if self.content_attribute: value = getattr(self.element, self.content_attribute)
-        else: value = self.element.textContent
-        if self.typename == "number":
-            try: value = int(value)
-            except: value = float(value)
+        if self.element.matches("input[type=checkbox]"):
+            value = string_to_boolean(self.element.checked)
+        elif self.element.matches("input[type=number]"):
+            value = string_to_number(self.element.value)
+        elif self.element.matches("textarea, select, input"):
+            value = self.element.value
+        else:
+            value = self.element.textContent
+            
         return value
         
     @value.setter
     def value(self, value):
         value = str(value)
-        if self.content_attribute: setattr(self.element, self.content_attribute, value)
-        self.element.textContent = value
+        if self.element.matches("input[type=checkbox]"):
+            self.element.checked = string_to_boolean(value)
+        elif self.element.matches("textarea, select, input"):
+            self.element.value = value
+        else:
+            self.element.textContent = value
     
     @property
     def number(self):
@@ -107,6 +122,10 @@ def client_print(*args, **kwargs):
     ElementWrapper.of(stdout).print(*args, **kwargs)
 
 def run_script(text):
+    ElementWrapper.instances.clear()
+
+    Config.document_element = Config.document.documentElement
+    Config.user_namespace = {}
     Config.user_namespace["input"] = client_input
     Config.user_namespace["print"] = client_print
 
@@ -127,9 +146,6 @@ def main():
     else:
         Config.document = window.document
 
-    Config.document_element = Config.document.documentElement
-    Config.user_namespace = {}
-    
     window.run_python = run_script
 
 main()
