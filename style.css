@@ -39,6 +39,11 @@ h1 {
 	font-family: Dosis;
 }
 
+a, a:visited {
+	color: white;
+	text-decoration: underline;
+}
+
 #edit-region {
 	position: relative;
 	border: 1px solid black;
