@@ -18,9 +18,9 @@ def string_to_boolean(value):
     return True
 
 def string_to_number(value):
-    try: value = int(value)
+    try: return int(value)
     except: pass
-    try: value = float(value)
+    try: return float(value)
     except: pass
     return value
 
@@ -106,20 +106,24 @@ class ElementWrapper:
         try: callback()
         except Exception as e: show_stacktrace()
 
-def client_input(element_id = None):
-    if element_id is None: element = None
-    elif isinstance(element_id, ElementWrapper): element = element_id
-    else: element = Config.document.getElementById(str(element_id))
+def client_get_element(element_id = "stdout"):
+    if isinstance(element_id, ElementWrapper): return element_id
+    element = Config.document.getElementById(str(element_id))
+    if element is not None: return ElementWrapper.of(element)
+    return None
 
+def client_input(element_id = None):
+    element = client_get_element(element_id)
     if element is None:
         show_stacktrace("Incorrect HTML id given to input.")
         return ""
     else:
+        print(f"Value={element.value} Type={type(element.value)}")
         return element.value
 
 def client_print(*args, **kwargs):
-    stdout = Config.document_element.querySelector("#stdout")
-    ElementWrapper.of(stdout).print(*args, **kwargs)
+    element = client_get_element()
+    element.print(*args, **kwargs)
 
 def run_script(text):
     ElementWrapper.instances.clear()
