@@ -71,10 +71,24 @@ const TEMPLATES = {
  ****************************************************************************/
 
 const EditSession = require("ace/edit_session").EditSession;
+var UndoManager = require("ace/undomanager").UndoManager;
 ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.13/")
 const editor = ace.edit("editor");
 const filenameInput = document.getElementById("filename")
 const iframeElement = document.querySelector("iframe")
+
+editor.commands.addCommands([
+	{
+		name : 'undo',
+		bindKey : 'Ctrl-Z',
+		exec : function() { editor.session.getUndoManager().undo() }
+	},
+	{
+		name : 'redo',
+		bindKey : 'Ctrl-Y',
+		exec : function(editor){ editor.session.getUndoManager().redo() }
+	}
+])
 
 /****************************************************************************
  ** Utility functions.                                                     **
@@ -123,6 +137,7 @@ class Project {
 			const session = new EditSession("")
 			session.setMode(`ace/mode/${sessionName}`)
 			session.setValue(localStorage.getItem(`pypad.${sessionName}`) || "")
+			session.setUndoManager(new UndoManager())
 			this.sessions[sessionName] = session
 		}
 	}

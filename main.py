@@ -98,6 +98,11 @@ class ElementWrapper:
         print(*args, file=output, **kwargs)
         self.value += output.getvalue()
     
+    def print_html(self, *args, **kwargs):
+        output = io.StringIO()
+        print(*args, file=output, **kwargs)
+        self.element.innerHTML += output.getvalue()
+    
     def client_event_handler(self, event):
         target_id = event.target.id
         method_name = f"{event.type}_{target_id}"
@@ -125,6 +130,10 @@ def client_print(*args, **kwargs):
     element = client_get_element()
     element.print(*args, **kwargs)
 
+def client_print_html(*args, **kwargs):
+    element = client_get_element()
+    element.print_html(*args, **kwargs)
+
 def run_script(text):
     ElementWrapper.instances.clear()
 
@@ -132,6 +141,7 @@ def run_script(text):
     Config.user_namespace = {}
     Config.user_namespace["input"] = client_input
     Config.user_namespace["print"] = client_print
+    Config.user_namespace["print_html"] = client_print_html
 
     for element in Config.document_element.querySelectorAll("[id]"):
         element_wrapper = ElementWrapper.of(element)
