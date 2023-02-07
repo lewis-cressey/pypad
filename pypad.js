@@ -75,7 +75,7 @@ var UndoManager = require("ace/undomanager").UndoManager;
 ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.13/")
 const editor = ace.edit("editor");
 const filenameInput = document.getElementById("filename")
-const iframeElement = document.querySelector("iframe")
+let iframeElement = document.querySelector("iframe")
 
 editor.commands.addCommands([
 	{
@@ -191,6 +191,14 @@ const PROJECT = new Project()
  ** User interface.                                                        **
  ****************************************************************************/
 
+function recreateIframe() {
+	let iframeElement = document.querySelector("iframe")
+	if (iframeElement) iframeElement.remove()
+	iframeElement = document.createElement("iframe")
+	document.getElementById("iframe-container").append(iframeElement)
+	return iframeElement
+}
+
 document.querySelector("#file-select").addEventListener("change", event => {
     PROJECT.save()
 	const session = PROJECT.getSession(event.target.value)
@@ -200,6 +208,9 @@ document.querySelector("#file-select").addEventListener("change", event => {
 
 document.querySelector("#run-button").addEventListener("click", event => {
 	PROJECT.save()
+	recreateIframe()
+
+const iframeElement = recreateIframe()
 	const doc = iframeElement.contentWindow.document
 	const jsCode = PROJECT.getText("javascript")
 	

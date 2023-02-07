@@ -136,6 +136,12 @@ def client_print_html(*args, **kwargs):
 
 def run_script(text):
     ElementWrapper.instances.clear()
+    iframe = window.document.querySelector("iframe")
+
+    if iframe:
+        Config.document = iframe.contentWindow.document
+    else:
+        Config.document = window.document
 
     Config.document_element = Config.document.documentElement
     Config.user_namespace = {}
@@ -153,12 +159,6 @@ def run_script(text):
         show_stacktrace()
     
 def main():
-    iframe = window.document.getElementById("user-page")
-
-    if iframe:
-        Config.document = iframe.contentWindow.document
-    else:
-        Config.document = window.document
 
     window.run_python = run_script
 
