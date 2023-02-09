@@ -74,8 +74,19 @@ const EditSession = require("ace/edit_session").EditSession;
 var UndoManager = require("ace/undomanager").UndoManager;
 ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.13/")
 const editor = ace.edit("editor");
-const filenameInput = document.getElementById("filename")
-let iframeElement = document.querySelector("iframe")
+
+const PAGE = {
+	filenameInput: document.getElementById("filename"),
+	fileSelect: document.getElementById("file-select"),
+	popupLayer: document.getElementById("popup-layer"),
+	newButton: document.getElementById("new-button"),
+	runButton: document.getElementById("run-button"),
+	saveLink: document.getElementById("save-link"),
+	exportButton: document.getElementById("export-button"),
+	loadButton: document.getElementById("load-button"),
+	saveButton: document.getElementById("save-button"),
+	loadFile: document.getElementById("load-file"),
+}
 
 editor.commands.addCommands([
 	{
@@ -95,10 +106,10 @@ editor.commands.addCommands([
  ****************************************************************************/
 
 function getFilename(extension = "") {
-	let filename = filenameInput.value.trim()
+	let filename = PAGE.filenameInput.value.trim()
 	if (filename == "") {
 		filename = localStorage.getItem("pypad.filename") || "unnamed"
-		filenameInput.value = filename
+		PAGE.filenameInput.value = filename
 	}
 	if (!filename.endsWith(extension)) filename += extension
 	return filename
@@ -106,22 +117,16 @@ function getFilename(extension = "") {
 
 function download(filename, text, mimetype = "text/plain") {
 	const blob = new Blob([ text ], { type: mimetype })
-	const link = document.getElementById("save-link")
-    link.href = window.URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
+    PAGE.saveLink.href = window.URL.createObjectURL(blob)
+    PAGE.saveLink.download = filename
+    PAGE.saveLink.click()
 }
 
 function showPopup(text) {
-	const layer = document.querySelector("#popup-layer")
-    layer.innerHTML = "<pre></pre>"
-    content = layer.querySelector("pre")
-    content.textContent = text
-    content.addEventListener("click", function() {
-        layer.innerHTML = ""
-        layer.setAttribute("class", "hidden")
-	})
-    layer.setAttribute("class", "")
+	const pre = document.createElement("pre")
+	pre.textContent = text
+	PAGE.popupLayer.append(pre)
+    PAGE.popupLayer.classList.remove("hidden")
 }
 
 /****************************************************************************
@@ -199,18 +204,18 @@ function recreateIframe() {
 	return iframeElement
 }
 
-document.querySelector("#file-select").addEventListener("change", event => {
+PAGE.fileSelect.addEventListener("change", event => {
     PROJECT.save()
 	const session = PROJECT.getSession(event.target.value)
 	editor.setSession(session)
 	editor.focus()
 })
 
-document.querySelector("#run-button").addEventListener("click", event => {
+PAGE.runButton.addEventListener("click", event => {
 	PROJECT.save()
 	recreateIframe()
 
-const iframeElement = recreateIframe()
+	const iframeElement = recreateIframe()
 	const doc = iframeElement.contentWindow.document
 	const jsCode = PROJECT.getText("javascript")
 	
@@ -227,20 +232,21 @@ const iframeElement = recreateIframe()
 	const scriptElement = iframeDoc.createElement("script")
 	iframeElement.contentWindow.addEventListener("error", function(event) {
 		const message = `Javascript error on line ${event.lineno}.\n${event.message}`
-		window.parent.postMessage(message)
+		window.parent.postMessage({ type: "error", message: message })
 	})
 	scriptElement.textContent = jsCode
 	iframeDoc.querySelector("body").append(scriptElement)
+	
 	window.run_python(PROJECT.getText("python"))
 })
 
-document.querySelector("#save-button").addEventListener("click", event => {
+PAGE.saveButton.addEventListener("click", event => {
     PROJECT.save()
 	const filename = getFilename(".pypad")
 	download(filename, PROJECT.toJson(), "application/json")
 })
 
-document.querySelector("#load-file").addEventListener("change", event => {
+PAGE.loadFile.addEventListener("change", event => {
     const reader = new FileReader()
 
     reader.onload = function() {
@@ -252,11 +258,11 @@ document.querySelector("#load-file").addEventListener("change", event => {
     if (files[0]) reader.readAsText(files[0])
 })
 
-document.querySelector("#load-button").addEventListener("click", event => {
-    document.querySelector("#load-file").click()
+PAGE.loadButton.addEventListener("click", event => {
+    PAGE.loadFile.click()
 })
 
-document.querySelector("#export-button").addEventListener("click", async event => {
+PAGE.exportButton.addEventListener("click", async event => {
     PROJECT.save()
 	const filename = getFilename(".html")
 	const response = await window.fetch("main.py")
@@ -274,17 +280,27 @@ document.querySelector("#export-button").addEventListener("click", async event =
 	download(filename, standalone, "text/html")
 })
 
-document.querySelector("#new-button").addEventListener("click", async event => {
+PAGE.newButton.addEventListener("click", async event => {
 	PROJECT.reset()
+})
+
+PAGE.popupLayer.addEventListener("click", event => {
+	PAGE.popupLayer.innerHTML = ""
+    PAGE.popupLayer.classList.add("hidden")
 })
 
 function main() {
 	getFilename()
 	PROJECT.load()
+	
+	PAGE.fileSelect.selectedIndex = 0
 	editor.setSession(PROJECT.getSession("html"))
 	
 	window.addEventListener("message", function (event) {
-		showPopup(event.data)
+		const data = event.data
+		if (data.type === "error") {
+			showPopup(data.message)
+		}
 	})
 }
 

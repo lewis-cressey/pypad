@@ -10,7 +10,10 @@ class Config:
 
 def show_stacktrace(message = ""):
     trace = traceback.format_exc()
-    window.parent.postMessage(f"Python error: {message}\n{trace}")
+    window.parent.postMessage({
+        "type" : "error",
+        "message" : f"Python error: {message}\n{trace}"
+    })
 
 def string_to_boolean(value):
     value = str(value).lower()
