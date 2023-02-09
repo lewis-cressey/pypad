@@ -213,33 +213,42 @@ PAGE.fileSelect.addEventListener("change", event => {
 
 PAGE.runButton.addEventListener("click", event => {
 	PROJECT.save()
-	recreateIframe()
-
 	const iframeElement = recreateIframe()
 	const doc = iframeElement.contentWindow.document
-	const jsCode = PROJECT.getText("javascript")
 	
-	doc.documentElement.innerHTML = TEMPLATES.iframe.render({
-		css: PROJECT.getText("css"),
-		html: PROJECT.getText("html")
-	})
-	
-	for (let element of doc.querySelectorAll("a, form")) {
-		element.setAttribute("target", "_blank")
-	}
+	const fillIframe = function() {
+		const jsCode = PROJECT.getText("javascript")
+		
+		doc.documentElement.innerHTML = TEMPLATES.iframe.render({
+			css: PROJECT.getText("css"),
+			html: PROJECT.getText("html")
+		})
+		
+		for (let element of doc.querySelectorAll("a, form")) {
+			element.setAttribute("target", "_blank")
+		}
 
-	const iframeDoc = iframeElement.contentDocument || iframeElement.contentWindow.document
-	const scriptElement = iframeDoc.createElement("script")
-	iframeElement.contentWindow.addEventListener("error", function(event) {
-		const message = `Javascript error on line ${event.lineno}.\n${event.message}`
-		window.parent.postMessage({ type: "error", message: message })
-	})
-	scriptElement.textContent = jsCode
-	
-	window.setTimeout(function() {
+		const iframeDoc = iframeElement.contentDocument || iframeElement.contentWindow.document
+		const scriptElement = iframeDoc.createElement("script")
+		iframeElement.contentWindow.addEventListener("error", function(event) {
+			const message = `Javascript error on line ${event.lineno}.\n${event.message}`
+			window.parent.postMessage({ type: "error", message: message })
+		})
+		scriptElement.textContent = jsCode
+		
 		iframeDoc.querySelector("body").append(scriptElement)
 		window.run_python(PROJECT.getText("python"))
-	}, 1)
+	}
+	
+	let onReadyStateChange = function() {
+		if (doc.readyState === "complete") {
+			fillIframe()
+		} else {
+			setInterval(onReadyStateChange, 10)
+		}
+	}
+	
+	onReadyStateChange()	
 })
 
 PAGE.saveButton.addEventListener("click", event => {
