@@ -235,9 +235,11 @@ PAGE.runButton.addEventListener("click", event => {
 		window.parent.postMessage({ type: "error", message: message })
 	})
 	scriptElement.textContent = jsCode
-	iframeDoc.querySelector("body").append(scriptElement)
 	
-	window.run_python(PROJECT.getText("python"))
+	window.setTimeout(function() {
+		iframeDoc.querySelector("body").append(scriptElement)
+		window.run_python(PROJECT.getText("python"))
+	}, 1)
 })
 
 PAGE.saveButton.addEventListener("click", event => {
