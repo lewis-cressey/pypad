@@ -244,7 +244,7 @@ PAGE.runButton.addEventListener("click", event => {
 		if (doc.readyState === "complete") {
 			fillIframe()
 		} else {
-			setInterval(onReadyStateChange, 10)
+			setTimeout(onReadyStateChange, 10)
 		}
 	}
 	

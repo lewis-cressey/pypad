@@ -7,7 +7,7 @@
 body {
 	background: white;
 	display: flex;
-	flex-flow: row nowrap;
+	flex-flow: column nowrap;
 	justify-content: stretch;
 	align-content: stretch;
 	align-items: start;
