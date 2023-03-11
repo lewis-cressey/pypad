@@ -201,6 +201,7 @@ function recreateIframe() {
 	if (iframeElement) iframeElement.remove()
 	iframeElement = document.createElement("iframe")
 	document.getElementById("iframe-container").append(iframeElement)
+    document.domain = window.location.hostname
 	return iframeElement
 }
 
@@ -214,9 +215,8 @@ PAGE.fileSelect.addEventListener("change", event => {
 PAGE.runButton.addEventListener("click", event => {
 	PROJECT.save()
 	const iframeElement = recreateIframe()
-	const doc = iframeElement.contentWindow.document
 	
-	const fillIframe = function() {
+	const fillIframe = function(doc) {
 		const jsCode = PROJECT.getText("javascript")
 		
 		doc.documentElement.innerHTML = TEMPLATES.iframe.render({
@@ -240,9 +240,10 @@ PAGE.runButton.addEventListener("click", event => {
 		window.run_python(PROJECT.getText("python"))
 	}
 	
-	let onReadyStateChange = function() {
+	const onReadyStateChange = function() {
+        const doc = iframeElement.contentWindow.document
 		if (doc.readyState === "complete") {
-			fillIframe()
+			fillIframe(doc)
 		} else {
 			setTimeout(onReadyStateChange, 10)
 		}
